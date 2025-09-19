@@ -1,0 +1,52 @@
+# 前端忽略规则
+node_modules/
+*.log
+*.cache
+.DS_Store
+Thumbs.db
+
+# 后端忽略规则
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.sln.docstates
+*.userprefs
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 配置文件
+appsettings.Development.json
+appsettings.Production.json
+
+# 上传文件目录
+Uploads/
+uploads/
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 构建输出
+dist/
+build/
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+
+# 日志文件
+*.log
+logs/
+
+# 环境文件
+.env
+.env.local
+.env.*.local
