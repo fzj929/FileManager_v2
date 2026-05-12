@@ -157,7 +157,7 @@
             <el-icon><Timer /></el-icon>
             <strong> 到期：</strong> {{ formatDate(selectedFile.sharedExpiry) }}
           </p>
-          <p v-else class="expiry-text"><el-icon><Infinity /></el-icon> <strong>永久有效</strong></p>
+          <p v-else class="expiry-text"><strong>永久有效</strong></p>
           <el-divider />
           <el-button
             type="danger"
@@ -217,9 +217,6 @@ import {
 import type { FileItem } from '@/types/auth'
 import { fileService } from '@/services/fileService'
 
-// Infinity icon shim (not in @element-plus/icons-vue, use a simple component)
-const Infinity = { render: () => null }
-
 const files = ref<FileItem[]>([])
 const loading = ref(false)
 const sharing = ref(false)
@@ -244,12 +241,14 @@ const filteredFiles = computed(() => {
   return files.value.filter(f => f.originalName.toLowerCase().includes(q) || f.contentType.toLowerCase().includes(q))
 })
 
+const archiveTypes = ['zip', 'rar', 'tar', 'gzip', '7z', 'bzip2']
+
 // File type icon mapping
 const getFileIconComponent = (contentType: string) => {
   if (contentType.startsWith('image/')) return Picture
   if (contentType.startsWith('video/')) return VideoCamera
   if (contentType.startsWith('audio/')) return Headset
-  if (contentType.includes('zip') || contentType.includes('rar') || contentType.includes('tar') || contentType.includes('gzip') || contentType.includes('7z')) return Files
+  if (archiveTypes.some(t => contentType.includes(t))) return Files
   return Document
 }
 
@@ -257,7 +256,7 @@ const getFileIconColor = (contentType: string) => {
   if (contentType.startsWith('image/')) return '#e6a23c'
   if (contentType.startsWith('video/')) return '#f56c6c'
   if (contentType.startsWith('audio/')) return '#9c27b0'
-  if (contentType.includes('zip') || contentType.includes('rar') || contentType.includes('tar')) return '#67c23a'
+  if (archiveTypes.some(t => contentType.includes(t))) return '#67c23a'
   return '#409eff'
 }
 
@@ -300,7 +299,7 @@ const handleFileSelect = (event: Event) => {
     }
     uploadFile(file)
   }
-  // Reset so same file can be selected again
+  // Reset the input so the same file can be selected again (first .value is the ref, second is the HTMLInputElement value)
   if (fileInput.value) fileInput.value.value = ''
 }
 

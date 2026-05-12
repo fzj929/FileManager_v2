@@ -14,6 +14,13 @@ namespace FileShareAPI.Controllers
     [Authorize]
     public class FilesController : ControllerBase
     {
+        // Blocked file extensions for security reasons
+        private static readonly HashSet<string> DangerousExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".exe", ".bat", ".cmd", ".sh", ".ps1", ".com", ".pif", ".scr",
+            ".msi", ".dll", ".vbs", ".hta", ".wsf", ".jar", ".cpl"
+        };
+
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _environment;
@@ -84,13 +91,8 @@ namespace FileShareAPI.Controllers
                     return BadRequest(new { message = "No file provided" });
 
                 // Blacklist dangerous file extensions
-                var dangerousExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ".exe", ".bat", ".cmd", ".sh", ".ps1", ".com", ".pif", ".scr",
-                    ".msi", ".dll", ".vbs", ".hta", ".wsf", ".jar", ".cpl"
-                };
                 var ext = Path.GetExtension(file.FileName);
-                if (dangerousExtensions.Contains(ext))
+                if (DangerousExtensions.Contains(ext))
                     return BadRequest(new { message = "File type not allowed for security reasons" });
 
                 var maxFileSize = _configuration.GetValue<long>("FileStorage:MaxFileSize", 104857600);

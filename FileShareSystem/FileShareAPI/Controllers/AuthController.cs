@@ -55,7 +55,7 @@ namespace FileShareAPI.Controllers
 
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation("User registered: {UserName}", user.UserName);
+                    _logger.LogInformation("User registered: {UserName}", user.UserName?.Replace("\r", "").Replace("\n", ""));
                     var token = _jwtService.GenerateToken(user.Id, user.UserName!, user.Email!);
 
                     return Ok(new AuthResponse
