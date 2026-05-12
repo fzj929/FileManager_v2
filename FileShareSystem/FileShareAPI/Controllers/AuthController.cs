@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using FileShareAPI.Models;
 using FileShareAPI.Services;
 
@@ -7,6 +8,7 @@ namespace FileShareAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableRateLimiting("auth")]
     public class AuthController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -53,7 +55,7 @@ namespace FileShareAPI.Controllers
 
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation($"User registered: {user.UserName}");
+                    _logger.LogInformation("User registered: {UserName}", user.UserName);
                     var token = _jwtService.GenerateToken(user.Id, user.UserName!, user.Email!);
 
                     return Ok(new AuthResponse
@@ -96,11 +98,11 @@ namespace FileShareAPI.Controllers
                 if (user == null)
                     return Unauthorized(new { message = "Invalid credentials" });
 
-                var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
+                var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, lockoutOnFailure: true);
 
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation($"User logged in: {user.UserName}");
+                    _logger.LogInformation("User logged in: {UserName}", user.UserName);
                     var token = _jwtService.GenerateToken(user.Id, user.UserName!, user.Email!);
 
                     return Ok(new AuthResponse
@@ -111,6 +113,9 @@ namespace FileShareAPI.Controllers
                         ExpiresAt = DateTime.UtcNow.AddMinutes(1440)
                     });
                 }
+
+                if (result.IsLockedOut)
+                    return StatusCode(429, new { message = "Account locked out due to too many failed attempts. Please try again later." });
 
                 return Unauthorized(new { message = "Invalid credentials" });
             }

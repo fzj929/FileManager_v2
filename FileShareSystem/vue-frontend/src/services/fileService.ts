@@ -6,7 +6,7 @@ export const fileService = {
     return api.get<FileItem[]>('/files')
   },
 
-  uploadFile(file: File) {
+  uploadFile(file: File, onProgress?: (percent: number) => void) {
     const formData = new FormData()
     formData.append('file', file)
 
@@ -16,9 +16,9 @@ export const fileService = {
       },
       timeout: 300000, // 5 minutes timeout for large files
       onUploadProgress: (progressEvent) => {
-        if (progressEvent.total) {
+        if (progressEvent.total && onProgress) {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-          return percentCompleted
+          onProgress(percentCompleted)
         }
       },
     })
@@ -36,6 +36,10 @@ export const fileService = {
 
   shareFile(fileId: number, expiryDays: number = 0) {
     return api.post<ShareFileResponse>(`/files/${fileId}/share`, { expiryDays })
+  },
+
+  unshareFile(fileId: number) {
+    return api.delete(`/files/${fileId}/share`)
   },
 
   getSharedFile(token: string) {

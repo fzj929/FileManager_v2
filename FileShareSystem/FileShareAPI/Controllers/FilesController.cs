@@ -83,6 +83,16 @@ namespace FileShareAPI.Controllers
                 if (file == null || file.Length == 0)
                     return BadRequest(new { message = "No file provided" });
 
+                // Blacklist dangerous file extensions
+                var dangerousExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ".exe", ".bat", ".cmd", ".sh", ".ps1", ".com", ".pif", ".scr",
+                    ".msi", ".dll", ".vbs", ".hta", ".wsf", ".jar", ".cpl"
+                };
+                var ext = Path.GetExtension(file.FileName);
+                if (dangerousExtensions.Contains(ext))
+                    return BadRequest(new { message = "File type not allowed for security reasons" });
+
                 var maxFileSize = _configuration.GetValue<long>("FileStorage:MaxFileSize", 104857600);
                 if (file.Length > maxFileSize)
                     return BadRequest(new { message = $"File size exceeds maximum allowed size of {maxFileSize / 1048576}MB" });
@@ -91,7 +101,13 @@ namespace FileShareAPI.Controllers
                 if (!Directory.Exists(uploadPath))
                     Directory.CreateDirectory(uploadPath);
 
-                var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                // Sanitize file name to prevent path traversal attacks
+                var safeOriginalName = Path.GetFileName(file.FileName);
+                safeOriginalName = string.Concat(safeOriginalName.Split(Path.GetInvalidFileNameChars()));
+                if (string.IsNullOrWhiteSpace(safeOriginalName))
+                    safeOriginalName = "file";
+
+                var fileName = $"{Guid.NewGuid()}_{safeOriginalName}";
                 var filePath = Path.Combine(uploadPath, fileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
@@ -102,7 +118,7 @@ namespace FileShareAPI.Controllers
                 var userFile = new UserFile
                 {
                     FileName = fileName,
-                    OriginalName = file.FileName,
+                    OriginalName = safeOriginalName,
                     FilePath = filePath,
                     FileSize = file.Length,
                     ContentType = file.ContentType,
@@ -113,7 +129,7 @@ namespace FileShareAPI.Controllers
                 _context.UserFiles.Add(userFile);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"File uploaded: {file.FileName} by user {user.UserName}");
+                _logger.LogInformation("File uploaded: {FileName} by user {UserName}", file.FileName, user.UserName);
 
                 return Ok(new
                 {
@@ -181,7 +197,7 @@ namespace FileShareAPI.Controllers
                 _context.UserFiles.Remove(file);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"File deleted: {file.OriginalName} by user {user.UserName}");
+                _logger.LogInformation("File deleted: {FileName} by user {UserName}", file.OriginalName, user.UserName);
 
                 return Ok(new { message = "File deleted successfully" });
             }
@@ -229,6 +245,39 @@ namespace FileShareAPI.Controllers
             {
                 _logger.LogError(ex, "Error sharing file");
                 return StatusCode(500, new { message = "Error sharing file" });
+            }
+        }
+
+        [HttpDelete("{id}/share")]
+        public async Task<IActionResult> UnshareFile(int id)
+        {
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                    return Unauthorized();
+
+                var file = await _context.UserFiles
+                    .FirstOrDefaultAsync(f => f.Id == id && f.UserId == user.Id);
+
+                if (file == null)
+                    return NotFound(new { message = "File not found" });
+
+                file.IsShared = false;
+                file.SharedToken = null;
+                file.SharedExpiry = null;
+                file.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("File unshared: {FileName} by user {UserName}", file.OriginalName, user.UserName);
+
+                return Ok(new { message = "File unshared successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unsharing file");
+                return StatusCode(500, new { message = "Error unsharing file" });
             }
         }
 
