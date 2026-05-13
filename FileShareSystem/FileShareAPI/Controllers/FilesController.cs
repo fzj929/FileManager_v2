@@ -107,7 +107,11 @@ namespace FileShareAPI.Controllers
                 var safeOriginalName = Path.GetFileName(file.FileName);
                 safeOriginalName = string.Concat(safeOriginalName.Split(Path.GetInvalidFileNameChars()));
                 if (string.IsNullOrWhiteSpace(safeOriginalName))
-                    safeOriginalName = "file";
+                {
+                    // Preserve extension even when the base name is invalid
+                    var fallbackExt = Path.GetExtension(file.FileName);
+                    safeOriginalName = "file" + fallbackExt;
+                }
 
                 var fileName = $"{Guid.NewGuid()}_{safeOriginalName}";
                 var filePath = Path.Combine(uploadPath, fileName);

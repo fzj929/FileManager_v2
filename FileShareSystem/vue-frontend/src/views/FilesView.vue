@@ -299,7 +299,7 @@ const handleFileSelect = (event: Event) => {
     }
     uploadFile(file)
   }
-  // Reset the input so the same file can be selected again (first .value is the ref, second is the HTMLInputElement value)
+  // Reset file input to allow re-uploading the same file
   if (fileInput.value) fileInput.value.value = ''
 }
 

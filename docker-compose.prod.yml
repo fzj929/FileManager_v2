@@ -1,0 +1,18 @@
+# Production override – pulls pre-built images from GHCR instead of building locally.
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Required environment variables (set in .env or system environment):
+#   REGISTRY_OWNER  – GitHub owner/org (lowercase), e.g. "myorg"
+#   IMAGE_TAG       – image tag, e.g. "latest" or "v1.2.0"
+
+services:
+  backend:
+    image: ghcr.io/${REGISTRY_OWNER}/fileshare-backend:${IMAGE_TAG:-latest}
+    build:
+      context: /dev/null   # Disable local build; image is pulled from GHCR
+
+  frontend:
+    image: ghcr.io/${REGISTRY_OWNER}/fileshare-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: /dev/null   # Disable local build; image is pulled from GHCR

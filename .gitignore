@@ -36,6 +36,10 @@ uploads/
 # 构建输出
 dist/
 build/
+publish/
+
+# 自动生成的 TypeScript 构建缓存
+tsconfig.tsbuildinfo
 
 # 临时文件
 *.tmp

@@ -84,6 +84,9 @@ builder.Services.AddCors(options =>
 // Add services
 builder.Services.AddScoped<IJwtService, JwtService>();
 
+// Add health checks
+builder.Services.AddHealthChecks();
+
 // Add controllers with form options for large file uploads
 builder.Services.AddControllers(options =>
 {
@@ -124,6 +127,7 @@ if (!Directory.Exists(uploadPath))
     Directory.CreateDirectory(uploadPath);
 
 app.MapControllers();
+app.MapHealthChecks("/api/health");
 
 // Initialize database
 using (var scope = app.Services.CreateScope())
